@@ -3,77 +3,57 @@ package com.example.cryptotrader
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
-import com.example.cryptotrader.ui.theme.CryptoTraderTheme
-import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.compose.ui.viewinterop.AndroidView
-import com.github.mikephil.charting.charts.LineChart
-import com.github.mikephil.charting.data.LineData
-import com.github.mikephil.charting.data.LineDataSet
-import com.github.mikephil.charting.components.XAxis
-import com.example.cryptotrader.viewmodel.TradingViewModel
+import androidx.navigation.NavType
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
+import dagger.hilt.android.AndroidEntryPoint
+import com.example.cryptotrader.ui.screens.MarketOverviewScreen
+import com.example.cryptotrader.ui.screens.DetailScreen
+import com.example.cryptotrader.ui.screens.OrderScreen
+import com.example.cryptotrader.ui.screens.OrderHistoryScreen
+import com.example.cryptotrader.ui.theme.TradingAppTheme
 
+/**
+ * The main entry point of the application. Sets up navigation and hosts the top-level UI.
+ */
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
         setContent {
-            CryptoTraderTheme {
-                val vm: TradingViewModel = viewModel()
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    TradingScreen(vm, modifier = Modifier.padding(innerPadding))
-                }
+            TradingAppTheme {
+                AppNavigation()
             }
         }
     }
 }
 
 @Composable
-fun TradingScreen(vm: TradingViewModel, modifier: Modifier = Modifier) {
-    val entries by vm.entries.collectAsState()
-    val price by vm.latestPrice.collectAsState()
-
-    Column(modifier = modifier.fillMaxSize()) {
-        Text(text = "Latest Price: $" + String.format("%.2f", price))
-        AndroidView(factory = { context ->
-            LineChart(context).apply {
-                xAxis.position = XAxis.XAxisPosition.BOTTOM
-                axisRight.isEnabled = false
-            }
-        }, update = { chart ->
-            val dataSet = LineDataSet(entries, "Price").apply {
-                setDrawValues(false)
-                setDrawCircles(false)
-            }
-            chart.data = LineData(dataSet)
-            chart.invalidate()
-        }, modifier = Modifier.weight(1f))
-        Button(onClick = { /* buy action */ }, modifier = Modifier.padding(8.dp)) {
-            Text("Buy")
+fun AppNavigation() {
+    val navController = rememberNavController()
+    NavHost(navController = navController, startDestination = "overview") {
+        composable("overview") {
+            MarketOverviewScreen(navController)
         }
-        Button(onClick = { /* sell action */ }, modifier = Modifier.padding(8.dp)) {
-            Text("Sell")
+        composable(
+            route = "detail/{symbol}",
+            arguments = listOf(navArgument("symbol") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val symbol = backStackEntry.arguments?.getString("symbol") ?: ""
+            DetailScreen(navController, symbol)
         }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun TradingPreview() {
-    CryptoTraderTheme {
-        val vm = TradingViewModel()
-        TradingScreen(vm)
+        composable(
+            route = "order/{symbol}",
+            arguments = listOf(navArgument("symbol") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val symbol = backStackEntry.arguments?.getString("symbol") ?: ""
+            OrderScreen(navController, symbol)
+        }
+        composable("orders") {
+            OrderHistoryScreen(navController)
+        }
     }
 }
