@@ -1,18 +1,28 @@
 package com.example.cryptotrader.ui.screens
 
-import androidx.compose.foundation.layout.*
+import android.annotation.SuppressLint
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.Divider
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.icons.Icons
-import androidx.compose.material3.icons.filled.ArrowBack
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.cryptotrader.data.Candle
@@ -22,11 +32,12 @@ import com.github.mikephil.charting.components.XAxis
 import com.github.mikephil.charting.data.CandleData
 import com.github.mikephil.charting.data.CandleDataSet
 import com.github.mikephil.charting.data.CandleEntry
-import androidx.compose.ui.viewinterop.AndroidView
 
 /**
  * Detailed view showing candle chart and current price for a specific symbol.
  */
+@SuppressLint("DefaultLocale")
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DetailScreen(navController: NavController, symbol: String) {
     val viewModel: DetailViewModel = hiltViewModel()
@@ -39,10 +50,7 @@ fun DetailScreen(navController: NavController, symbol: String) {
                 title = { Text(symbol) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        androidx.compose.material3.Icon(
-                            Icons.Default.ArrowBack,
-                            contentDescription = "Back"
-                        )
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                     }
                 }
             )
@@ -56,12 +64,15 @@ fun DetailScreen(navController: NavController, symbol: String) {
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Text(
-                text = "Last: ${String.format("%.2f", priceUpdate.last)} Bid: ${String.format("%.2f", priceUpdate.bid)} Ask: ${String.format("%.2f", priceUpdate.ask)}"
+                text = "Last: ${String.format("%.2f", priceUpdate.last)} Bid: ${
+                    String.format("%.2f", priceUpdate.bid)
+                } Ask: ${String.format("%.2f", priceUpdate.ask)}"
             )
             Divider()
-            CandlestickChartView(candles = candles, modifier = Modifier
-                .fillMaxWidth()
-                .height(300.dp)
+            CandlestickChartView(
+                candles = candles, modifier = Modifier
+                    .fillMaxWidth()
+                    .height(300.dp)
             )
             Spacer(modifier = Modifier.height(16.dp))
             Button(onClick = {
