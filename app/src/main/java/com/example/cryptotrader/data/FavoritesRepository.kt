@@ -1,4 +1,3 @@
-// data/FavoritesRepository.kt
 package com.example.cryptotrader.data
 
 import android.content.Context

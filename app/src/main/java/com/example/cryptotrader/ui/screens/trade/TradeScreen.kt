@@ -1,29 +1,11 @@
 // TradeScreen.kt
 package com.example.cryptotrader.ui.screens.trade
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.ExperimentalAnimationApi
+/* ────────── imports ────────── */
+import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.defaultMinSize
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -31,31 +13,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.Divider
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Slider
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -71,51 +30,77 @@ import androidx.navigation.NavController
 import com.example.cryptotrader.data.Order
 import com.example.cryptotrader.data.Order.Side
 import com.example.cryptotrader.data.Order.Status
+import com.example.cryptotrader.data.TickerRepository
 import com.example.cryptotrader.ui.detail.OrderBookEntry
 import com.example.cryptotrader.ui.screens.trade.OrderType.LIMIT
 import com.example.cryptotrader.ui.screens.trade.OrderType.MARKET
 import java.util.Locale
 import kotlin.math.roundToInt
 
-/* ---------- 入口 ---------- */
+/* ──────────────────────────── Composable ──────────────────────────── */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalAnimationApi::class)
 @Composable
 fun TradeScreen(
+    /** 路由带入的 symbol；可能是 “BTCUSDT” 也可能是 “BTC/USDT” */
     symbol: String,
-    initPrice: Float,
-    navController: NavController,
-    vm: TradeViewModel = viewModel(
-        key = symbol,
+    navController: NavController
+) {
+    /* 1️⃣  还原成仓库使用的 “AAA/USDT” 形式 */
+    val repoSymbol = remember(symbol) {
+        val upper = symbol.uppercase()
+        if (upper.contains("/")) upper
+        else {
+            // 支持常见报价币；可自行扩充
+            val quotes = listOf("USDT", "BUSD", "FDUSD", "USDC")
+            val quote = quotes.firstOrNull { upper.endsWith(it) }
+            if (quote != null) {
+                upper.dropLast(quote.length) + "/" + quote
+            } else upper          // 若无法识别，保留原样
+        }
+    }
+
+    /* 2️⃣  ViewModel 以 repoSymbol 为 key，确保同币对共享状态 */
+    val vm: TradeViewModel = viewModel(
+        key = repoSymbol,
         factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
-            override fun <T : ViewModel> create(c: Class<T>): T =
-                TradeViewModel(symbol, initPrice) as T
+            override fun <T : ViewModel> create(modelClass: Class<T>): T =
+                TradeViewModel(repoSymbol) as T
         }
     )
-) {
+
+    /* 3️⃣  订阅统一行情流，并推送到 ViewModel */
+    val ticker by TickerRepository.observe(repoSymbol).collectAsState(initial = null)
+    LaunchedEffect(ticker?.price) {
+        ticker?.price?.toFloat()?.let { vm.updateLatestPrice(it) }
+    }
+
     val ui by vm.ui.collectAsState()
 
-    var showConfirm by remember { mutableStateOf(false) }
-    var bottomTab by remember { mutableStateOf(0) }
+    /* ---------- 本地 UI 状态 ---------- */
+    var showConfirm     by remember { mutableStateOf(false) }
+    var bottomTab       by remember { mutableStateOf(0) }
     var showOnlyCurrent by remember { mutableStateOf(true) }
+    var stopEnabled     by remember { mutableStateOf(false) }
+    var takeProfitTxt   by remember { mutableStateOf("") }
+    var stopLossTxt     by remember { mutableStateOf("") }
 
-    var stopEnabled by remember { mutableStateOf(false) }
-    var takeProfitTxt by remember { mutableStateOf("") }
-    var stopLossTxt by remember { mutableStateOf("") }
-
-    val buyColor = Color(0xFF00B4B4)
+    /* 颜色 */
+    val buyColor  = Color(0xFF00B4B4)
     val sellColor = Color(0xFFD32F2F)
     val mainColor = if (ui.isBuy) buyColor else sellColor
 
-    val priceF = ui.priceField.parseFloat() ?: 0f
-    val qtyF = ui.qtyField.parseFloat() ?: 0f
+    /* 计算金额 */
+    val priceF   = ui.priceField.parseFloat() ?: 0f
+    val qtyF     = ui.qtyField.parseFloat()   ?: 0f
     val amountTxt =
         if (priceF == 0f || qtyF == 0f) "" else "%.2f".format(Locale.US, priceF * qtyF)
 
+    /* ─────────── Scaffold ─────────── */
     Scaffold(
-        topBar = {    /* 仅固定标题栏 */
+        topBar = {
             TopAppBar(
-                title = { Text(symbol, fontWeight = FontWeight.Bold) },
+                title = { Text(repoSymbol, fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.Default.ArrowBack, null)
@@ -123,50 +108,48 @@ fun TradeScreen(
                 }
             )
         },
-        bottomBar = {                       // ❸ 固定，永远可见
+        bottomBar = {
             Box(
                 Modifier
                     .fillMaxWidth()
-                    .navigationBarsPadding() // 兼容手势/三键导航
+                    .navigationBarsPadding()
             ) {
                 Button(
-                    onClick = { showConfirm = true },
+                    onClick  = { showConfirm = true },
+                    enabled  = priceF > 0f && qtyF > 0f,
+                    colors   = ButtonDefaults.buttonColors(containerColor = mainColor),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(56.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = mainColor),
-                    enabled = priceF > 0f && qtyF > 0f
+                        .height(56.dp)
                 ) { Text("交易") }
             }
         }
-        /* bottomBar 移除，以便按钮随内容一起滚动；若想固定，请恢复 */
     ) { pad ->
 
-        /* 整页（标题栏除外）单一滚轴 */
+        /* ─── 可滚动主内容 ─── */
         Column(
-            modifier = Modifier
+            Modifier
                 .fillMaxSize()
                 .padding(pad)
                 .verticalScroll(rememberScrollState())
         ) {
 
-            /* ───── 顶部表单 + 深度面板 ───── */
+            /* ───────── 顶部表单 + 深度面板 ───────── */
             Row(
                 Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 12.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                /* 左侧表单（去掉内部 verticalScroll） */
+                /* ===== 左侧表单 ===== */
                 Column(
                     Modifier
                         .weight(1f)
                         .wrapContentHeight()
                 ) {
-
-                    /* 买/卖切换 */
+                    /* 买/卖选择 */
                     Row(Modifier.fillMaxWidth()) {
-                        SegTab("买入", ui.isBuy) { vm.switchSide(true) }
+                        SegTab("买入", ui.isBuy)  { vm.switchSide(true)  }
                         SegTab("卖出", !ui.isBuy) { vm.switchSide(false) }
                     }
                     Spacer(Modifier.height(8.dp))
@@ -187,15 +170,11 @@ fun TradeScreen(
                         ExposedDropdownMenu(drop, { drop = false }) {
                             DropdownMenuItem(
                                 text = { Text("限价单") },
-                                onClick = {
-                                    vm.setOrderType(LIMIT); drop = false
-                                }
+                                onClick = { vm.setOrderType(LIMIT); drop = false }
                             )
                             DropdownMenuItem(
                                 text = { Text("市价单") },
-                                onClick = {
-                                    vm.setOrderType(MARKET); drop = false
-                                }
+                                onClick = { vm.setOrderType(MARKET); drop = false }
                             )
                         }
                     }
@@ -214,16 +193,14 @@ fun TradeScreen(
                             Button(onClick = {
                                 val bbo = if (ui.isBuy)
                                     ui.orderBook.minByOrNull { it.ask }?.ask
-                                else
-                                    ui.orderBook.maxByOrNull { it.bid }?.bid
+                                else ui.orderBook.maxByOrNull { it.bid }?.bid
                                 bbo?.let { vm.onPriceChange(it.noComma()) }
                             }) { Text("BBO") }
                         }
                     } else {
                         OutlinedTextField(
                             value = ui.latestPrice.noComma(),
-                            onValueChange = {},
-                            readOnly = true,
+                            onValueChange = {}, readOnly = true,
                             label = { Text("市价 (USDT)") },
                             modifier = Modifier.fillMaxWidth()
                         )
@@ -233,7 +210,7 @@ fun TradeScreen(
                     OutlinedTextField(
                         value = ui.qtyField,
                         onValueChange = vm::onQtyChange,
-                        label = { Text("数量 (BTC)") },
+                        label = { Text("数量") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -246,21 +223,20 @@ fun TradeScreen(
 
                     OutlinedTextField(
                         value = amountTxt,
-                        onValueChange = {},
-                        readOnly = true,
+                        onValueChange = {}, readOnly = true,
                         label = { Text("交易额 (USDT)") },
                         modifier = Modifier.fillMaxWidth()
                     )
 
                     Spacer(Modifier.height(4.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(checked = stopEnabled, onCheckedChange = { stopEnabled = it })
+                        Checkbox(stopEnabled, { stopEnabled = it })
                         Text("止盈止损", fontSize = 12.sp)
                     }
                     AnimatedVisibility(
-                        visible = stopEnabled,
+                        stopEnabled,
                         enter = expandVertically(tween(250)) + fadeIn(),
-                        exit = shrinkVertically(tween(250)) + fadeOut()
+                        exit  = shrinkVertically(tween(250)) + fadeOut()
                     ) {
                         Column {
                             OutlinedTextField(
@@ -284,6 +260,7 @@ fun TradeScreen(
                     Text("可用 ${ui.availableBalance.noComma()} USDT ➕", fontSize = 12.sp)
                 }
 
+                /* ===== 右侧深度面板 ===== */
                 DepthPanel(
                     book = ui.orderBook,
                     last = ui.latestPrice,
@@ -291,7 +268,7 @@ fun TradeScreen(
                 )
             }
 
-            /* ───── Tabs 与列表 ───── */
+            /* ───────── Tabs & 列表 ───────── */
             Divider()
             Row(Modifier.fillMaxWidth()) {
                 listOf("委托", "资产", "跟单", "机器人").forEachIndexed { i, t ->
@@ -308,13 +285,13 @@ fun TradeScreen(
                         Alignment.CenterVertically
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Checkbox(checked = showOnlyCurrent, onCheckedChange = { showOnlyCurrent = it })
+                            Checkbox(showOnlyCurrent, { showOnlyCurrent = it })
                             Text("只看当前", fontSize = 12.sp)
                         }
                         TextButton(onClick = vm::cancelAll) { Text("全部撤销") }
                     }
                     val list = ui.allOrders.filter {
-                        it.status == Status.OPEN && (!showOnlyCurrent || it.symbol == symbol)
+                        it.status == Status.OPEN && (!showOnlyCurrent || it.symbol == repoSymbol)
                     }
                     OrdersList(list, vm::cancelOrder)
                 }
@@ -324,15 +301,13 @@ fun TradeScreen(
             }
         }
 
-        /* ───── 确认弹窗 ───── */
+        /* ───────── 下单确认弹窗 ───────── */
         if (showConfirm) {
             AlertDialog(
                 onDismissRequest = { showConfirm = false },
                 confirmButton = {
                     TextButton(
-                        onClick = {
-                            vm.placeOrder(); showConfirm = false
-                        }
+                        onClick = { vm.placeOrder(); showConfirm = false }
                     ) { Text("确认") }
                 },
                 dismissButton = {
@@ -353,56 +328,31 @@ fun TradeScreen(
     }
 }
 
-/* ─────────── 深度面板 ─────────── */
-/* ─────────── Depth Panel ─────────── */
+/* ───────────────── 深度面板 & 工具函数 (与前版本一致) ───────────────── */
 @Composable
-private fun DepthPanel(
-    book: List<OrderBookEntry>,
-    last: Float,
-    modifier: Modifier = Modifier
-) {
+private fun DepthPanel(book: List<OrderBookEntry>, last: Float, modifier: Modifier = Modifier) {
     Column(
-        modifier
-            .width(150.dp)
-            .padding(end = 8.dp)
+        modifier.width(150.dp).padding(end = 8.dp)
     ) {
-
-        /* 表头 */
         Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween) {
             Text("价格(USDT)", style = MaterialTheme.typography.labelSmall)
-            Text("数量(BTC)", style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.End)
+            Text("数量", style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.End)
         }
-
-        /* 卖盘 5 档（红，高→低），用普通 Column */
         val sells = book.take(5).sortedByDescending { it.ask }
-        sells.forEach { DepthRow(price = it.ask, qty = it.amount, isBuy = false) }
+        sells.forEach { DepthRow(it.ask, it.amount, isBuy = false) }
 
-        /* 最新价行 */
-        Row(
-            Modifier.fillMaxWidth(),
-            Arrangement.SpaceBetween,
-            Alignment.CenterVertically
-        ) {
-            Text(
-                last.noComma(),
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Text("")      // 数量列留空
+        Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween, Alignment.CenterVertically) {
+            Text(last.noComma(), fontSize = 20.sp, fontWeight = FontWeight.Bold)
+            Text("")
         }
-        Text(
-            "≈ ¥${(last * 7.18f).roundToInt()}",
-            fontSize = 12.sp,
-            modifier = Modifier.align(Alignment.End)
-        )
+        Text("≈ ¥${(last * 7.18f).roundToInt()}",
+            fontSize = 12.sp, modifier = Modifier.align(Alignment.End))
 
-        /* 买盘 5 档（绿，低→高），同样用 Column */
         val buys = book.takeLast(5).sortedBy { it.bid }
-        buys.forEach { DepthRow(price = it.bid, qty = it.amount, isBuy = true) }
+        buys.forEach { DepthRow(it.bid, it.amount, isBuy = true) }
 
         Spacer(Modifier.height(4.dp))
-        LinearProgressIndicator(progress = 0.37f, Modifier.fillMaxWidth())
+        LinearProgressIndicator(0.37f, Modifier.fillMaxWidth())
         Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween) {
             Text("B 37%", fontSize = 12.sp)
             Text("63% S", fontSize = 12.sp)
@@ -410,46 +360,26 @@ private fun DepthPanel(
     }
 }
 
-/* 深度单行 */
 @Composable
 private fun DepthRow(price: Float, qty: Float, isBuy: Boolean) {
-    val priceColor = if (isBuy) Color(0xFF00B4B4) else Color(0xFFD32F2F)
-    Row(
-        Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Text(price.noComma(), color = priceColor)
-        Text(
-            qty.noComma(4),
-            color = MaterialTheme.colorScheme.outline,
-            textAlign = TextAlign.End
-        )
+    val color = if (isBuy) Color(0xFF00B4B4) else Color(0xFFD32F2F)
+    Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween) {
+        Text(price.noComma(), color = color)
+        Text(qty.noComma(4), color = MaterialTheme.colorScheme.outline, textAlign = TextAlign.End)
     }
 }
 
-/* ─────────── Tabs、列表等（逻辑与旧版一致） ─────────── */
+/* ---- Segmented tabs ---- */
 @Composable
-private fun RowScope.SegTab(
-    text: String,
-    selected: Boolean,
-    onClick: () -> Unit
-) {
-    val bg = if (selected) MaterialTheme.colorScheme.primary
-    else MaterialTheme.colorScheme.surface
-    val fg = if (selected) MaterialTheme.colorScheme.onPrimary
-    else MaterialTheme.colorScheme.onSurface
-
+private fun RowScope.SegTab(text: String, selected: Boolean, onClick: () -> Unit) {
+    val bg = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface
+    val fg = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
     TextButton(
-        onClick = onClick,
-        modifier = Modifier
-            .weight(1f)
-            .background(bg, MaterialTheme.shapes.small),
+        onClick,
+        Modifier.weight(1f).background(bg, MaterialTheme.shapes.small),
         contentPadding = PaddingValues(0.dp)
-    ) {
-        Text(text, color = fg, fontSize = 12.sp)
-    }
+    ) { Text(text, color = fg, fontSize = 12.sp) }
 }
-
 
 @Composable
 private fun RowScope.SegTab2(text: String, selected: Boolean, onClick: () -> Unit) {
@@ -458,26 +388,28 @@ private fun RowScope.SegTab2(text: String, selected: Boolean, onClick: () -> Uni
     }
 }
 
+/* ---- 列表 / 空态 ---- */
 @Composable
 private fun OrdersList(list: List<Order>, onCancel: (Long) -> Unit) {
-    if (list.isEmpty()) PlaceholderSection("暂无委托") else
-        LazyColumn(Modifier.height(160.dp)) { items(list) { OrderRow(it, onCancel) } }
+    if (list.isEmpty()) PlaceholderSection("暂无委托")
+    else LazyColumn(Modifier.height(160.dp)) {
+        items(list) { OrderRow(it, onCancel) }
+    }
 }
 
 @Composable
 private fun HistoryList(list: List<Order>) {
-    if (list.isEmpty()) PlaceholderSection("暂无历史成交") else
-        LazyColumn(Modifier.height(160.dp)) { items(list) { HistoryRow(it) } }
+    if (list.isEmpty()) PlaceholderSection("暂无历史成交")
+    else LazyColumn(Modifier.height(160.dp)) {
+        items(list) { HistoryRow(it) }
+    }
 }
 
 @Composable
 private fun OrderRow(o: Order, onCancel: (Long) -> Unit) {
     Row(
-        Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 2.dp),
-        Arrangement.SpaceBetween,
-        Alignment.CenterVertically
+        Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 2.dp),
+        Arrangement.SpaceBetween, Alignment.CenterVertically
     ) {
         Text("${if (o.side == Side.BUY) "买" else "卖"} ${o.qty.noComma(4)}", fontSize = 12.sp)
         Text("¥ ${o.price.noComma()}", fontSize = 12.sp)
@@ -488,9 +420,7 @@ private fun OrderRow(o: Order, onCancel: (Long) -> Unit) {
 @Composable
 private fun HistoryRow(o: Order) {
     Row(
-        Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 2.dp),
+        Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 2.dp),
         Arrangement.SpaceBetween
     ) {
         Text("${if (o.side == Side.BUY) "买" else "卖"} ${o.qty.noComma(4)}", fontSize = 12.sp)
@@ -501,17 +431,11 @@ private fun HistoryRow(o: Order) {
 
 @Composable
 private fun PlaceholderSection(text: String = "页面建设中") =
-    Box(
-        Modifier
-            .fillMaxWidth()
-            .height(80.dp),
-        Alignment.Center
-    ) { Text(text) }
+    Box(Modifier.fillMaxWidth().height(80.dp), Alignment.Center) { Text(text) }
 
-/* ---------- 工具扩展 ---------- */
+/* ---- 工具扩展 ---- */
 private fun String.parseFloat() = replace(",", "").toFloatOrNull()
 private fun Float.noComma(dec: Int = 2) = "%.${dec}f".format(Locale.US, this)
 
-@Composable
-private fun InfoRow(k: String, v: String) =
+@Composable private fun InfoRow(k: String, v: String) =
     Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween) { Text(k); Text(v) }

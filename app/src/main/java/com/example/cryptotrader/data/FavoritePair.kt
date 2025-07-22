@@ -1,4 +1,3 @@
-// data/FavoritePair.kt
 package com.example.cryptotrader.data
 
 import androidx.room.Entity

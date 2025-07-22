@@ -56,15 +56,13 @@ fun AppNavigation() {
         }
 
         composable(
-            route = "trade/{symbol}/{price}",
+            route = "trade/{symbol}",
             arguments = listOf(
-                navArgument("symbol") { type = NavType.StringType },
-                navArgument("price")  { type = NavType.FloatType }
+                navArgument("symbol") { type = NavType.StringType }
             )
-        ) { backStackEntry ->
-            val symbol = backStackEntry.arguments!!.getString("symbol")!!
-            val price  = backStackEntry.arguments!!.getFloat("price")
-            TradeScreen(symbol, price, navController)
+        ) { backStack ->
+            val sym = backStack.arguments!!.getString("symbol")!!
+            TradeScreen(symbol = sym, navController = navController)
         }
     }
 }
