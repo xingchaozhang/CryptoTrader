@@ -66,7 +66,7 @@ dependencies {
 
     // Jetpack Compose (与 kotlin 1.9.22 兼容)
     implementation("androidx.compose.ui:ui:1.8.3")
-    implementation(libs.material3)
+    implementation("androidx.compose.material3:material3:1.2.1")
     implementation("androidx.compose.material:material:1.8.3")
     implementation("androidx.compose.material:material-icons-extended:1.7.8")
     debugImplementation("androidx.compose.ui:ui-tooling:1.8.3")
@@ -94,6 +94,9 @@ dependencies {
 
     // DataStore
     implementation("androidx.datastore:datastore-preferences:1.0.0")
+
+    // Jetpack Security for encrypted storage
+    implementation("androidx.security:security-crypto:1.1.0-alpha06")
 
     // Coroutines – 使用 Kotlin 1.9.x 对应版本
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4")
