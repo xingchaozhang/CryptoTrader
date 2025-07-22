@@ -9,16 +9,15 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import dagger.hilt.android.AndroidEntryPoint
-import com.example.cryptotrader.ui.screens.MarketOverviewScreen
-import com.example.cryptotrader.ui.screens.DetailScreen
-import com.example.cryptotrader.ui.screens.OrderScreen
+import com.example.cryptotrader.ui.screens.MainScreen
 import com.example.cryptotrader.ui.screens.OrderHistoryScreen
+import com.example.cryptotrader.ui.screens.OrderScreen
+import com.example.cryptotrader.ui.screens.detail.SpotDetailScreen
+import com.example.cryptotrader.ui.screens.trade.TradeScreen
 import com.example.cryptotrader.ui.theme.TradingAppTheme
+import dagger.hilt.android.AndroidEntryPoint
+import java.net.URLDecoder
 
-/**
- * The main entry point of the application. Sets up navigation and hosts the top-level UI.
- */
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -34,16 +33,16 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun AppNavigation() {
     val navController = rememberNavController()
-    NavHost(navController = navController, startDestination = "overview") {
-        composable("overview") {
-            MarketOverviewScreen(navController)
+    NavHost(navController = navController, startDestination = "main") {
+        composable("main") {
+            MainScreen(navController)
         }
         composable(
             route = "detail/{symbol}",
             arguments = listOf(navArgument("symbol") { type = NavType.StringType })
-        ) { backStackEntry ->
-            val symbol = backStackEntry.arguments?.getString("symbol") ?: ""
-            DetailScreen(navController, symbol)
+        ) { backStack ->
+            val symbol = URLDecoder.decode(backStack.arguments?.getString("symbol")!!, "utf-8")
+            SpotDetailScreen(symbol, navController)
         }
         composable(
             route = "order/{symbol}",
@@ -54,6 +53,18 @@ fun AppNavigation() {
         }
         composable("orders") {
             OrderHistoryScreen(navController)
+        }
+
+        composable(
+            route = "trade/{symbol}/{price}",
+            arguments = listOf(
+                navArgument("symbol") { type = NavType.StringType },
+                navArgument("price")  { type = NavType.FloatType }
+            )
+        ) { backStackEntry ->
+            val symbol = backStackEntry.arguments!!.getString("symbol")!!
+            val price  = backStackEntry.arguments!!.getFloat("price")
+            TradeScreen(symbol, price, navController)
         }
     }
 }

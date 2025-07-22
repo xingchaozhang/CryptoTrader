@@ -12,9 +12,7 @@ private val LightColors = lightColorScheme(
 )
 
 @Composable
-fun TradingAppTheme(
-    content: @Composable () -> Unit
-) {
+fun TradingAppTheme(content: @Composable () -> Unit) {
     MaterialTheme(
         colorScheme = LightColors,
         content = content

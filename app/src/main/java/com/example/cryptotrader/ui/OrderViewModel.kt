@@ -38,12 +38,15 @@ class OrderViewModel @Inject constructor(
     fun setPrice(value: String) {
         _price.value = value.toDoubleOrNull() ?: 0.0
     }
+
     fun setAmount(value: String) {
         _amount.value = value.toDoubleOrNull() ?: 0.0
     }
+
     fun setSide(newSide: OrderSide) {
         _side.value = newSide
     }
+
     fun setType(newType: OrderType) {
         _type.value = newType
     }

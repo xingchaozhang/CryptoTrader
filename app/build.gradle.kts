@@ -66,7 +66,7 @@ dependencies {
 
     // Jetpack Compose (与 kotlin 1.9.22 兼容)
     implementation("androidx.compose.ui:ui:1.8.3")
-    implementation("androidx.compose.material3:material3:1.3.2")
+    implementation(libs.material3)
     implementation("androidx.compose.material:material:1.8.3")
     implementation("androidx.compose.material:material-icons-extended:1.7.8")
     debugImplementation("androidx.compose.ui:ui-tooling:1.8.3")
@@ -88,9 +88,9 @@ dependencies {
     implementation("com.squareup.okhttp3:logging-interceptor:4.10.0")
 
     // Room
-    implementation("androidx.room:room-runtime:2.5.2")
-    implementation("androidx.room:room-ktx:2.5.2")
-    kapt("androidx.room:room-compiler:2.5.2")
+    implementation("androidx.room:room-runtime:2.6.1")
+    implementation("androidx.room:room-ktx:2.6.1")
+    kapt("androidx.room:room-compiler:2.6.1")
 
     // DataStore
     implementation("androidx.datastore:datastore-preferences:1.0.0")

@@ -7,12 +7,18 @@ import com.example.cryptotrader.data.local.OrderDao
 import com.example.cryptotrader.data.local.WatchlistDao
 import com.example.cryptotrader.data.remote.MarketRepository
 import com.example.cryptotrader.data.remote.MarketRepositoryImpl
-import com.example.cryptotrader.domain.usecase.*
+import com.example.cryptotrader.domain.usecase.AddToWatchlistUseCase
+import com.example.cryptotrader.domain.usecase.GetCandlesUseCase
+import com.example.cryptotrader.domain.usecase.GetOrdersUseCase
+import com.example.cryptotrader.domain.usecase.GetWatchlistUseCase
+import com.example.cryptotrader.domain.usecase.PlaceOrderUseCase
+import com.example.cryptotrader.domain.usecase.RemoveFromWatchlistUseCase
+import com.example.cryptotrader.domain.usecase.SubscribePriceUseCase
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
-import dagger.hilt.components.SingletonComponent
 import dagger.hilt.android.qualifiers.ApplicationContext
+import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
 @Module
