@@ -35,14 +35,11 @@ data class FakeTicker(
  * Returns a list of simulated tickers. The major pairs are listed first.
  */
 fun defaultFakeTickers(): List<FakeTicker> = listOf(
-    // Four major pairs at the top
     FakeTicker("BTC/USDT", basePrice = 65000.0, baseCnyPrice = 65000.0 * 7.2, volume = 120000.0),
     FakeTicker("ETH/USDT", basePrice = 3500.0, baseCnyPrice = 3500.0 * 7.2, volume = 80000.0),
     FakeTicker("BNB/USDT", basePrice = 550.0, baseCnyPrice = 550.0 * 7.2, volume = 40000.0),
     FakeTicker("SOL/USDT", basePrice = 160.0, baseCnyPrice = 160.0 * 7.2, volume = 30000.0),
 
-    // Remaining pairs from the original screenshot
-    FakeTicker("HBAR/USDT", basePrice = 0.2661, baseCnyPrice = 1.91, volume = 3004.29),
     FakeTicker("CRV/USDT", basePrice = 0.9796, baseCnyPrice = 7.04, volume = 2978.53),
     FakeTicker("ARB/USDT", basePrice = 0.4620, baseCnyPrice = 3.32, volume = 2602.52),
     FakeTicker("XLM/USDT", basePrice = 0.4644, baseCnyPrice = 3.33, volume = 2468.16),

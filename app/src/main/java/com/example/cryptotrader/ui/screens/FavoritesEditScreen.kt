@@ -34,8 +34,6 @@ import androidx.compose.ui.unit.dp
 import com.example.cryptotrader.data.FavoritesRepository
 import com.example.cryptotrader.data.defaultFakeTickers
 
-/**
- * 自选「编辑」页面。
  * 保存后回调 onSave，并由外层切回查看模式。
  */
 @Composable
@@ -43,17 +41,15 @@ fun FavoritesEditScreen(
     modifier: Modifier = Modifier,
     onSave: (Set<String>) -> Unit
 ) {
-    /* 初始数据 */
     val allPairs = remember { defaultFakeTickers().map { it.symbol } }
     val selected = remember { FavoritesRepository.symbols.value.toMutableStateList() }
 
     Box(modifier.fillMaxSize()) {
 
-        /** 主内容可滚区域 */
         Column(
             Modifier
                 .fillMaxSize()
-                .padding(bottom = 88.dp)   // 给按钮让位
+                .padding(bottom = 88.dp)   
         ) {
 
             LazyVerticalGrid(
@@ -74,7 +70,6 @@ fun FavoritesEditScreen(
             }
         }
 
-        /** 底部确认按钮 */
         Button(
             onClick = { onSave(selected.toSet()) },
             enabled = selected.isNotEmpty(),
@@ -92,7 +87,6 @@ fun FavoritesEditScreen(
     }
 }
 
-/* 小卡片 UI */
 @Composable
 private fun FavoritePairCard(text: String, checked: Boolean, onToggle: () -> Unit) {
     Surface(

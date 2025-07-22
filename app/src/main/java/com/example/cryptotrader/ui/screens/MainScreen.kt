@@ -70,7 +70,7 @@ fun MainScreen(navController: NavController) {
         Triple("合约", Icons.Default.Description, "合约"),
         Triple("资产", Icons.Default.AccountBalanceWallet, "资产")
     )
-    var selectedIndex by remember { mutableStateOf(1) } // 默认进入行情页
+    var selectedIndex by remember { mutableStateOf(1) } 
     Scaffold(
         bottomBar = {
             NavigationBar {
@@ -106,7 +106,7 @@ fun MainScreen(navController: NavController) {
 fun MarketScreen(navController: NavController) {
 
     val topTabs        = listOf("自选", "市场", "机会", "观点")
-    var selectedTopTab by remember { mutableStateOf(0) }      // 默认进入“自选”
+    var selectedTopTab by remember { mutableStateOf(0) }      
     val favSymbols     by FavoritesRepository.symbols.collectAsState()
 
     /* editMode 初始取决于收藏是否为空 */
@@ -136,12 +136,12 @@ fun MarketScreen(navController: NavController) {
             0 -> if (editMode) {
                 FavoritesEditScreen { chosen ->
                     FavoritesRepository.replaceAll(chosen)
-                    editMode = false           // 保存后切回列表
+                    editMode = false           
                 }
             } else {
                 FavoritesListScreen(
                     navController = navController,
-                    onEditClick   = { editMode = true }  // 右上✎
+                    onEditClick   = { editMode = true }  
                 )
             }
 
@@ -384,10 +384,10 @@ fun SearchBar() {
             .padding(8.dp),
         shape = RoundedCornerShape(24.dp),
         colors = OutlinedTextFieldDefaults.colors(
-            // 边框颜色
+            
             focusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
             unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
-            // 容器颜色分别指定聚焦和非聚焦状态
+            
             focusedContainerColor = MaterialTheme.colorScheme.surface,
             unfocusedContainerColor = MaterialTheme.colorScheme.surface
         )

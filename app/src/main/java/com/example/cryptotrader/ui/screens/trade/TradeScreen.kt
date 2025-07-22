@@ -1,7 +1,5 @@
-// TradeScreen.kt
 package com.example.cryptotrader.ui.screens.trade
 
-/* ────────── imports ────────── */
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -37,29 +35,25 @@ import com.example.cryptotrader.ui.screens.trade.OrderType.MARKET
 import java.util.Locale
 import kotlin.math.roundToInt
 
-/* ──────────────────────────── Composable ──────────────────────────── */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalAnimationApi::class)
 @Composable
 fun TradeScreen(
-    /** 路由带入的 symbol；可能是 “BTCUSDT” 也可能是 “BTC/USDT” */
     symbol: String,
     navController: NavController
 ) {
-    /* 1️⃣  还原成仓库使用的 “AAA/USDT” 形式 */
     val repoSymbol = remember(symbol) {
         val upper = symbol.uppercase()
         if (upper.contains("/")) upper
         else {
-            // 支持常见报价币；可自行扩充
+            
             val quotes = listOf("USDT", "BUSD", "FDUSD", "USDC")
             val quote = quotes.firstOrNull { upper.endsWith(it) }
             if (quote != null) {
                 upper.dropLast(quote.length) + "/" + quote
-            } else upper          // 若无法识别，保留原样
+            } else upper          
         }
     }
 
-    /* 2️⃣  ViewModel 以 repoSymbol 为 key，确保同币对共享状态 */
     val vm: TradeViewModel = viewModel(
         key = repoSymbol,
         factory = object : ViewModelProvider.Factory {
@@ -69,7 +63,6 @@ fun TradeScreen(
         }
     )
 
-    /* 3️⃣  订阅统一行情流，并推送到 ViewModel */
     val ticker by TickerRepository.observe(repoSymbol).collectAsState(initial = null)
     LaunchedEffect(ticker?.price) {
         ticker?.price?.toFloat()?.let { vm.updateLatestPrice(it) }
@@ -77,7 +70,6 @@ fun TradeScreen(
 
     val ui by vm.ui.collectAsState()
 
-    /* ---------- 本地 UI 状态 ---------- */
     var showConfirm     by remember { mutableStateOf(false) }
     var bottomTab       by remember { mutableStateOf(0) }
     var showOnlyCurrent by remember { mutableStateOf(true) }
@@ -85,18 +77,15 @@ fun TradeScreen(
     var takeProfitTxt   by remember { mutableStateOf("") }
     var stopLossTxt     by remember { mutableStateOf("") }
 
-    /* 颜色 */
     val buyColor  = Color(0xFF00B4B4)
     val sellColor = Color(0xFFD32F2F)
     val mainColor = if (ui.isBuy) buyColor else sellColor
 
-    /* 计算金额 */
     val priceF   = ui.priceField.parseFloat() ?: 0f
     val qtyF     = ui.qtyField.parseFloat()   ?: 0f
     val amountTxt =
         if (priceF == 0f || qtyF == 0f) "" else "%.2f".format(Locale.US, priceF * qtyF)
 
-    /* ─────────── Scaffold ─────────── */
     Scaffold(
         topBar = {
             TopAppBar(
@@ -126,7 +115,6 @@ fun TradeScreen(
         }
     ) { pad ->
 
-        /* ─── 可滚动主内容 ─── */
         Column(
             Modifier
                 .fillMaxSize()
@@ -134,27 +122,23 @@ fun TradeScreen(
                 .verticalScroll(rememberScrollState())
         ) {
 
-            /* ───────── 顶部表单 + 深度面板 ───────── */
             Row(
                 Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 12.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                /* ===== 左侧表单 ===== */
                 Column(
                     Modifier
                         .weight(1f)
                         .wrapContentHeight()
                 ) {
-                    /* 买/卖选择 */
                     Row(Modifier.fillMaxWidth()) {
                         SegTab("买入", ui.isBuy)  { vm.switchSide(true)  }
                         SegTab("卖出", !ui.isBuy) { vm.switchSide(false) }
                     }
                     Spacer(Modifier.height(8.dp))
 
-                    /* 订单类型下拉 */
                     var drop by remember { mutableStateOf(false) }
                     ExposedDropdownMenuBox(drop, { drop = !drop }) {
                         OutlinedTextField(
@@ -260,7 +244,6 @@ fun TradeScreen(
                     Text("可用 ${ui.availableBalance.noComma()} USDT ➕", fontSize = 12.sp)
                 }
 
-                /* ===== 右侧深度面板 ===== */
                 DepthPanel(
                     book = ui.orderBook,
                     last = ui.latestPrice,
@@ -268,7 +251,6 @@ fun TradeScreen(
                 )
             }
 
-            /* ───────── Tabs & 列表 ───────── */
             Divider()
             Row(Modifier.fillMaxWidth()) {
                 listOf("委托", "资产", "跟单", "机器人").forEachIndexed { i, t ->
@@ -301,7 +283,6 @@ fun TradeScreen(
             }
         }
 
-        /* ───────── 下单确认弹窗 ───────── */
         if (showConfirm) {
             AlertDialog(
                 onDismissRequest = { showConfirm = false },
@@ -328,7 +309,6 @@ fun TradeScreen(
     }
 }
 
-/* ───────────────── 深度面板 & 工具函数 (与前版本一致) ───────────────── */
 @Composable
 private fun DepthPanel(book: List<OrderBookEntry>, last: Float, modifier: Modifier = Modifier) {
     Column(
@@ -369,7 +349,6 @@ private fun DepthRow(price: Float, qty: Float, isBuy: Boolean) {
     }
 }
 
-/* ---- Segmented tabs ---- */
 @Composable
 private fun RowScope.SegTab(text: String, selected: Boolean, onClick: () -> Unit) {
     val bg = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface
@@ -388,7 +367,6 @@ private fun RowScope.SegTab2(text: String, selected: Boolean, onClick: () -> Uni
     }
 }
 
-/* ---- 列表 / 空态 ---- */
 @Composable
 private fun OrdersList(list: List<Order>, onCancel: (Long) -> Unit) {
     if (list.isEmpty()) PlaceholderSection("暂无委托")
@@ -433,7 +411,6 @@ private fun HistoryRow(o: Order) {
 private fun PlaceholderSection(text: String = "页面建设中") =
     Box(Modifier.fillMaxWidth().height(80.dp), Alignment.Center) { Text(text) }
 
-/* ---- 工具扩展 ---- */
 private fun String.parseFloat() = replace(",", "").toFloatOrNull()
 private fun Float.noComma(dec: Int = 2) = "%.${dec}f".format(Locale.US, this)
 

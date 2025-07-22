@@ -1,5 +1,6 @@
 package com.example.cryptotrader.data.remote
 
+import android.util.Log
 import com.example.cryptotrader.data.Candle
 import com.example.cryptotrader.data.PriceUpdate
 import com.example.cryptotrader.data.local.OrderDao
@@ -22,7 +23,10 @@ class MarketRepositoryImpl @Inject constructor(
     private val orderDao: OrderDao
 ) : MarketRepository {
 
+    private val TAG = "MarketRepo"
+
     override fun subscribePriceStream(symbol: String): Flow<PriceUpdate> = flow {
+        Log.d(TAG, "subscribePriceStream: $symbol")
         var last = 30000.0
         val random = Random(System.currentTimeMillis())
         while (true) {
@@ -34,6 +38,7 @@ class MarketRepositoryImpl @Inject constructor(
     }.flowOn(Dispatchers.IO)
 
     override suspend fun getHistoricalCandles(symbol: String): List<Candle> {
+        Log.d(TAG, "getHistoricalCandles: $symbol")
         val candles = mutableListOf<Candle>()
         val now = System.currentTimeMillis()
         var lastClose = 30000.0
@@ -52,6 +57,7 @@ class MarketRepositoryImpl @Inject constructor(
     }
 
     override suspend fun placeOrder(order: OrderEntity) {
+        Log.d(TAG, "placeOrder: ${'$'}order")
         withContext(Dispatchers.IO) {
             orderDao.insert(order)
         }

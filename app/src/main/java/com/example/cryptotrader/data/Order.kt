@@ -6,11 +6,11 @@ import androidx.compose.runtime.Immutable
 data class Order(
     val id: Long,
     val symbol: String,
-    val price: Float,           // 提交时价格；市价单=最新价格快照
+    val price: Float,           
     val qty: Float,
-    val side: Side,             // BUY / SELL
-    val type: Type,             // LIMIT / MARKET
-    val status: Status,         // OPEN / FILLED / CANCELED
+    val side: Side,             
+    val type: Type,             
+    val status: Status,         
     val timeMillis: Long
 ) {
     enum class Side { BUY, SELL }

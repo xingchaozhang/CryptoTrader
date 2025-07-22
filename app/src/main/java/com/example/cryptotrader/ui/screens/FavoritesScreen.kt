@@ -1,6 +1,5 @@
 package com.example.cryptotrader.ui.screens
 
-/* ---------------- 自选页 ---------------- */
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
@@ -47,7 +46,7 @@ fun FavoritesScreen() {
     Scaffold(
         bottomBar = {
             Button(
-                onClick  = { /* TODO: persist */ },
+                onClick  = { },
                 enabled  = selectedPairs.isNotEmpty(),
                 colors   = ButtonDefaults.buttonColors(
                     containerColor = Color.Black,
