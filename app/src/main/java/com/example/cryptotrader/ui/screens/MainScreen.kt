@@ -249,18 +249,7 @@ fun SpotCategoryTabs(navController: NavController) {
 @Composable
 fun SpotAllList(navController: NavController) {
     val tickMap by TickerRepository.tickers.collectAsState()
-    val list = remember(tickMap) { tickMap.values.toList() }  // 全部行情
-    val tickers = remember { mutableStateListOf<FakeTicker>() }
-    if (tickers.isEmpty()) tickers += defaultFakeTickers().map { it.copy() }
-
-    LaunchedEffect(Unit) {
-        while (true) {
-            tickers.indices.forEach { i ->
-                tickers[i] = tickers[i].copy().apply { update() }
-            }
-            delay(1000)
-        }
-    }
+    val tickers = remember(tickMap) { tickMap.values.toList() }
     Column(modifier = Modifier.fillMaxSize()) {
         Row(
             modifier = Modifier

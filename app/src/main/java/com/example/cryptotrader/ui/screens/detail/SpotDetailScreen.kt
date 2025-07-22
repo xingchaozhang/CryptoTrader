@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.navigation.NavController
+import com.example.cryptotrader.data.TickerRepository
 import com.example.cryptotrader.ui.detail.Candle
 import com.example.cryptotrader.ui.detail.OrderBookEntry
 import com.example.cryptotrader.ui.detail.defaultOrderBook
@@ -60,6 +61,10 @@ fun SpotDetailScreen(symbol: String, navController: NavController) {
     /* ------- 数据流 ------- */
     val candlesFlow   = remember { MutableStateFlow(generateInitialCandles(CandlePeriod.D1)) }
     val orderBookFlow = remember { MutableStateFlow(defaultOrderBook()) }
+    val pairSymbol = remember(symbol) {
+        if (symbol.endsWith("USDT")) symbol.removeSuffix("USDT") + "/USDT" else symbol
+    }
+    val ticker by TickerRepository.observe(pairSymbol).collectAsState(initial = null)
 
     /* ------- UI 状态 ------- */
     var periodTab    by remember { mutableStateOf(3) }
@@ -77,21 +82,18 @@ fun SpotDetailScreen(symbol: String, navController: NavController) {
     var followLast by remember { mutableStateOf(true) }
 
     /* ------------------- K 线生成逻辑 ------------------- */
-    LaunchedEffect(periodTab) {
+    LaunchedEffect(pairSymbol, periodTab) {
         val period = tabToPeriod(periodTab)
         candlesFlow.value = generateInitialCandles(period)
-
-        val tickGap        = 1_000L
-        var now            = candlesFlow.value.last().time.toLong()
-
-        while (isActive) {
-            now += tickGap
-            candlesFlow.value = candlesFlow.value.updateByPriceTick(
-                period      = period,
-                nowMillis   = now,
-                latestPrice = nextPrice(candlesFlow.value.last().close)
-            )
-            delay(tickGap)
+        TickerRepository.observe(pairSymbol).collect { tk ->
+            tk?.let {
+                val now = System.currentTimeMillis()
+                candlesFlow.value = candlesFlow.value.updateByPriceTick(
+                    period = period,
+                    nowMillis = now,
+                    latestPrice = it.price.toFloat()
+                )
+            }
         }
     }
 
@@ -109,7 +111,7 @@ fun SpotDetailScreen(symbol: String, navController: NavController) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("$symbol/USDT", fontWeight = FontWeight.Bold) },
+                title = { Text(pairSymbol, fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.Default.ArrowBack, null)
@@ -378,7 +380,6 @@ private fun List<Candle>.updateByPriceTick(
     }
 }
 
-private fun nextPrice(prev: Float): Float = prev + random.nextFloat() * 120f - 60f
 
 /* ---------------- 子组件 & 工具 ----------------------------- */
 
