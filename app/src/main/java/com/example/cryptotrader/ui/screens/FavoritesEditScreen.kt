@@ -33,7 +33,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.example.cryptotrader.data.FavoritesRepository
 import com.example.cryptotrader.data.defaultFakeTickers
-
+/*
  * 保存后回调 onSave，并由外层切回查看模式。
  */
 @Composable
@@ -61,7 +61,7 @@ fun FavoritesEditScreen(
                 verticalArrangement = Arrangement.spacedBy(24.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                items(allPairs.subList(0, 6)) { symbol ->
+                items(allPairs.subList(0, 4)) { symbol ->
                     val checked = symbol in selected
                     FavoritePairCard(symbol, checked) {
                         if (checked) selected.remove(symbol) else selected.add(symbol)

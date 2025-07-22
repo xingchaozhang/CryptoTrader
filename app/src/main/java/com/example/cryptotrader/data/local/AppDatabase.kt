@@ -9,7 +9,7 @@ import androidx.room.RoomDatabase
 @Database(
     entities = [WatchlistEntity::class, OrderEntity::class],
     version = 1,
-    exportSchema = false // 关闭 schema 导出，避免警告
+    exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun watchlistDao(): WatchlistDao

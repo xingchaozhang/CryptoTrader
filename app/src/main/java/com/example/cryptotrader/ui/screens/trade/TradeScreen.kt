@@ -169,7 +169,7 @@ fun TradeScreen(
                             OutlinedTextField(
                                 value = ui.priceField,
                                 onValueChange = vm::onPriceChange,
-                                label = { Text("价格 (USDT)") },
+                                label = { Text("价格") },
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                                 modifier = Modifier.weight(1f)
                             )
@@ -315,7 +315,7 @@ private fun DepthPanel(book: List<OrderBookEntry>, last: Float, modifier: Modifi
         modifier.width(150.dp).padding(end = 8.dp)
     ) {
         Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween) {
-            Text("价格(USDT)", style = MaterialTheme.typography.labelSmall)
+            Text("价格", style = MaterialTheme.typography.labelSmall)
             Text("数量", style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.End)
         }
         val sells = book.take(5).sortedByDescending { it.ask }
