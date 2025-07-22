@@ -1,5 +1,6 @@
 package com.example.cryptotrader.data
 
+import android.util.Log
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 
@@ -8,6 +9,8 @@ import kotlinx.coroutines.flow.*
  * 现在用默认数据 + 1s 随机波动模拟；接入真实 WS 时在 updateMap() 中写入即可。
  */
 object TickerRepository {
+
+    private const val TAG = "TickerRepo"
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     private val _map = MutableStateFlow<Map<String, FakeTicker>>(emptyMap())
@@ -15,6 +18,7 @@ object TickerRepository {
 
     fun startMock() {
         if (_map.value.isNotEmpty()) return
+        Log.d(TAG, "startMock")
         _map.value = defaultFakeTickers().associateBy { it.symbol }
 
         scope.launch {
@@ -22,6 +26,7 @@ object TickerRepository {
                 _map.update { old ->
                     old.mapValues { (_, t) -> t.copy().apply { update() } }
                 }
+                Log.d(TAG, "tickers updated")
                 delay(1_000)
             }
         }

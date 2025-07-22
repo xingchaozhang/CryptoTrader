@@ -1,6 +1,7 @@
 package com.example.cryptotrader.data
 
 import android.content.Context
+import android.util.Log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
@@ -12,6 +13,8 @@ import kotlinx.coroutines.launch
  */
 object FavoritesRepository {
 
+    private const val TAG = "FavoritesRepo"
+
     /** 热流：UI 直接 collectAsState() 即可 */
     private val _symbols = MutableStateFlow<Set<String>>(emptySet())
     val symbols: StateFlow<Set<String>> = _symbols.asStateFlow()
@@ -21,6 +24,7 @@ object FavoritesRepository {
 
     /** 在 Application 启动时初始化 */
     fun init(context: Context) {
+        Log.d(TAG, "init")
         dao = AppDatabase.get(context).favoriteDao()
         /** 数据库 → StateFlow 同步 */
         scope.launch {
@@ -32,11 +36,13 @@ object FavoritesRepository {
 
     /** 覆盖保存 */
     fun replaceAll(newSet: Set<String>) {
+        Log.d(TAG, "replaceAll: $newSet")
         scope.launch { dao.replaceAll(newSet) }
     }
 
     /** 切换单个 symbol */
     fun toggle(symbol: String) {
+        Log.d(TAG, "toggle: $symbol")
         scope.launch {
             if (symbol in _symbols.value) dao.delete(FavoritePair(symbol))
             else dao.insertMany(listOf(FavoritePair(symbol)))

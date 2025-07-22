@@ -20,7 +20,6 @@ data class OrderBookEntry(
     val ask: Float          // 卖价
 )
 
-/* ------------ 数据生成与动态刷新 ------------ */
 
 private val random = Random(System.currentTimeMillis())
 

@@ -1,4 +1,3 @@
-// OrderDao.kt
 package com.example.cryptotrader.data.local
 
 import androidx.room.Dao

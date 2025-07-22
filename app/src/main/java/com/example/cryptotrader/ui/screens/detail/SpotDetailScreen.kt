@@ -1,7 +1,5 @@
-// SpotDetailScreen.kt
 package com.example.cryptotrader.ui.screens.detail
 
-/* ───────── imports ───────── */
 import android.content.Context
 import android.graphics.Paint
 import android.view.MotionEvent
@@ -79,7 +77,6 @@ import kotlin.math.roundToInt
 import kotlin.random.Random
 import android.graphics.Color as AndroidColor
 
-/* ---------- 周期枚举 ---------- */
 private enum class CandlePeriod(val minutes: Int) { M15(15), H1(60), H4(240), D1(1440) }
 
 private fun tabToPeriod(idx: Int) =
@@ -89,12 +86,10 @@ private fun tabToPeriod(idx: Int) =
 
 private val random = Random(System.currentTimeMillis())
 
-/* ---------- 入口 ---------- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SpotDetailScreen(symbol: String, navController: NavController) {
 
-    /* ===== 解析统一 symbol ===== */
     val pairSymbol = remember(symbol) {
         if (symbol.contains("/")) symbol.uppercase()
         else {
@@ -105,26 +100,22 @@ fun SpotDetailScreen(symbol: String, navController: NavController) {
         }
     }
 
-    /* ===== 数据流 ===== */
     val priceFlow = remember { TickerRepository.observe(pairSymbol).filterNotNull() }
     val candlesFlow = remember { MutableStateFlow<List<Candle>>(emptyList()) }
     val orderBookFlow = remember { MutableStateFlow(defaultOrderBook()) }
 
-    /* ===== UI 状态 ===== */
     var periodTab by remember { mutableStateOf(3) }
     var indicatorTab by remember { mutableStateOf(0) }
     var depthTab by remember { mutableStateOf(0) }
     val periods = listOf("15分", "1小时", "4小时", "日线", "更多")
     val indicators = listOf("MA", "EMA", "BOLL", "SAR", "AVL", "VOL", "MACD")
 
-    /* ===== 调色 ===== */
     val incColor = MaterialTheme.colorScheme.tertiary.toArgb()
     val decColor = MaterialTheme.colorScheme.error.toArgb()
     val neuColor = MaterialTheme.colorScheme.outline.toArgb()
     val colorShadow = AndroidColor.DKGRAY
     var followLast by remember { mutableStateOf(true) }
 
-    /* ===== 生成 / 更新 K 线 ===== */
     LaunchedEffect(pairSymbol, periodTab) {
         val period = tabToPeriod(periodTab)
         candlesFlow.value = emptyList()
@@ -139,7 +130,6 @@ fun SpotDetailScreen(symbol: String, navController: NavController) {
         }
     }
 
-    /* ===== 假订单簿刷新 ===== */
     LaunchedEffect(Unit) {
         while (isActive) {
             orderBookFlow.value = orderBookFlow.value.map {
@@ -149,7 +139,6 @@ fun SpotDetailScreen(symbol: String, navController: NavController) {
         }
     }
 
-    /* ---------- UI ---------- */
     Scaffold(
         topBar = {
             TopAppBar(
@@ -191,7 +180,6 @@ fun SpotDetailScreen(symbol: String, navController: NavController) {
             .fillMaxSize()
             .padding(pad)) {
 
-            /* ---- 价格头 ---- */
             item {
                 if (candleList.isNotEmpty())
                     PriceHeader(candleList.last())
@@ -204,7 +192,6 @@ fun SpotDetailScreen(symbol: String, navController: NavController) {
                     ) { CircularProgressIndicator(modifier = Modifier.size(16.dp)) }
             }
 
-            /* ---- 周期 Tab ---- */
             item {
                 ScrollableTabRow(periodTab) {
                     periods.forEachIndexed { i, t ->
@@ -215,7 +202,6 @@ fun SpotDetailScreen(symbol: String, navController: NavController) {
                 }
             }
 
-            /* ---- K 线图 ---- */
             item {
                 if (periodTab != 4) {
                     AndroidView(
@@ -233,7 +219,7 @@ fun SpotDetailScreen(symbol: String, navController: NavController) {
                                 setPinchZoom(true)
                                 isHighlightPerTapEnabled = true
                                 isHighlightPerDragEnabled = true
-                                setAutoScaleMinMaxEnabled(true)          // ► 自动缩放 Y 轴
+                                setAutoScaleMinMaxEnabled(true)          
 
                                 setOnChartGestureListener(object : OnChartGestureListener {
                                     override fun onChartGestureStart(
@@ -291,7 +277,7 @@ fun SpotDetailScreen(symbol: String, navController: NavController) {
                                 chart.notifyDataSetChanged()
                             }
 
-                            /* ► 手动设置 Y 轴范围（加一点 padding） */
+                            
                             val maxHigh = candleList.maxOf { it.high }
                             val minLow = candleList.minOf { it.low }
                             val padding = (maxHigh - minLow) * 0.05f
@@ -312,7 +298,6 @@ fun SpotDetailScreen(symbol: String, navController: NavController) {
                 }
             }
 
-            /* ---- 指标 Tab ---- */
             item {
                 ScrollableTabRow(indicatorTab) {
                     indicators.forEachIndexed { i, s ->
@@ -324,7 +309,6 @@ fun SpotDetailScreen(symbol: String, navController: NavController) {
                 }
             }
 
-            /* ---- 订单簿 / 成交 Tab ---- */
             item {
                 TabRow(depthTab) {
                     listOf("订单簿", "成交").forEachIndexed { i, t ->
@@ -336,7 +320,6 @@ fun SpotDetailScreen(symbol: String, navController: NavController) {
                 if (depthTab == 1) TradesPlaceholder()
             }
 
-            /* ---- 订单簿数据 ---- */
             if (depthTab == 0) {
                 item {
                     Row(
@@ -355,7 +338,6 @@ fun SpotDetailScreen(symbol: String, navController: NavController) {
     }
 }
 
-/* ---------------- Marker ---------------- */
 private class OHLCMarker(
     ctx: Context,
     private val candlesProvider: () -> List<Candle>
@@ -380,7 +362,6 @@ private class OHLCMarker(
     override fun getOffset(): MPPointF = MPPointF(-(width / 2f), -height - 10f)
 }
 
-/* ---------------- 数据逻辑 ---------------- */
 private fun genInitialCandles(
     seed: Float,
     p: CandlePeriod,
@@ -391,12 +372,12 @@ private fun genInitialCandles(
     val aligned = now / step * step
     var prev    = seed
 
-    val amp = seed * 0.02f                     // 每根最大 2% 振幅
+    val amp = seed * 0.02f                     
 
     return List(size) { i ->
         val t  = aligned - (size - 1 - i) * step
         val op = prev
-        val cl = op + random.nextFloat() * amp * 2 - amp      // ±amp
+        val cl = op + random.nextFloat() * amp * 2 - amp      
         val hi = max(op, cl) + random.nextFloat() * amp
         val lo = min(op, cl) - random.nextFloat() * amp
         prev = cl
@@ -415,28 +396,27 @@ private fun List<Candle>.updateByTick(
     val last = last()
 
     return if (now < last.time.toLong() + step) {
-        /* 仍在当前周期 → 更新 H/L/C */
+        
         dropLast(1) + last.copy(
             high  = max(last.high, price),
             low   = min(last.low , price),
             close = price
         )
     } else {
-        /* 进入新周期 → open 用上一根 close；H/L 要包含 open 与最新价 */
+        
         val aligned = now / step * step
         val open    = last.close
         val newCandle = Candle(
             time  = aligned.toFloat(),
             open  = open,
-            high  = max(open, price),        // ✅
-            low   = min(open, price),        // ✅
+            high  = max(open, price),        
+            low   = min(open, price),        
             close = price
         )
         (this + newCandle).takeLast(maxBars)
     }
 }
 
-/* ------------------- UI 辅助 ------------------- */
 @Composable
 private fun PriceHeader(c: Candle) {
     val pct = (c.close - c.open) / c.open * 100f
