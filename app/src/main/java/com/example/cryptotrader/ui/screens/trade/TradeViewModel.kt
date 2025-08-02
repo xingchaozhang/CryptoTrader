@@ -19,8 +19,8 @@ class TradeViewModel(private val symbol: String) : ViewModel() {
         TradeUiState(
             symbol = symbol,
             latestPrice = 0f,
-            priceField  = "",
-            orderBook   = emptyList()
+            priceField = "",
+            orderBook = emptyList()
         )
     )
     val ui: StateFlow<TradeUiState> = _ui
@@ -56,51 +56,53 @@ class TradeViewModel(private val symbol: String) : ViewModel() {
     }
 
     /* ---------- 表单交互 ---------- */
-    fun switchSide(buy: Boolean)          = _ui.update { it.copy(isBuy = buy) }
-    fun setOrderType(t: OrderType)        = _ui.update { it.copy(orderType = t) }
-    fun onPriceChange(v: String)          = _ui.update { it.copy(priceField = v) }
-    fun onQtyChange(txt: String)          = _ui.update { syncSlider(it.copy(qtyField = txt)) }
-    fun onSliderChange(v: Float)          = _ui.update { syncQty(it.copy(sliderPos = v)) }
-    fun toggleStop()                      = _ui.update { it.copy(stopLossEnabled = !it.stopLossEnabled) }
+    fun switchSide(buy: Boolean) = _ui.update { it.copy(isBuy = buy) }
+    fun setOrderType(t: OrderType) = _ui.update { it.copy(orderType = t) }
+    fun onPriceChange(v: String) = _ui.update { it.copy(priceField = v) }
+    fun onQtyChange(txt: String) = _ui.update { syncSlider(it.copy(qtyField = txt)) }
+    fun onSliderChange(v: Float) = _ui.update { syncQty(it.copy(sliderPos = v)) }
+    fun toggleStop() = _ui.update { it.copy(stopLossEnabled = !it.stopLossEnabled) }
 
     /* ---- qty ↔ slider 双向同步 ---- */
     private fun syncSlider(it: TradeUiState): TradeUiState {
         val price = it.priceField.parseFloat() ?: return it
-        val qty   = it.qtyField.parseFloat()   ?: return it
+        val qty = it.qtyField.parseFloat() ?: return it
         val pos = (price * qty / it.availableBalance).coerceIn(0f, 1f)
         return it.copy(sliderPos = pos)
     }
+
     private fun syncQty(it: TradeUiState): TradeUiState {
         val price = it.priceField.parseFloat() ?: return it
-        val qty   = (it.availableBalance * it.sliderPos / price)
+        val qty = (it.availableBalance * it.sliderPos / price)
         return it.copy(qtyField = qty.noComma(4))
     }
 
     /* ---------- 下单 --------- */
     fun placeOrder() {
         val price = _ui.value.priceField.parseFloat() ?: return
-        val qty   = _ui.value.qtyField.parseFloat()   ?: return
+        val qty = _ui.value.qtyField.parseFloat() ?: return
         if (price <= 0f || qty <= 0f) return
 
         OrderRepository.place(
             symbol = symbol,
-            price  = price,
-            qty    = qty,
-            side   = if (_ui.value.isBuy) Order.Side.BUY else Order.Side.SELL,
-            type   = if (_ui.value.orderType == OrderType.LIMIT)
+            price = price,
+            qty = qty,
+            side = if (_ui.value.isBuy) Order.Side.BUY else Order.Side.SELL,
+            type = if (_ui.value.orderType == OrderType.LIMIT)
                 Order.Type.LIMIT else Order.Type.MARKET
         )
     }
+
     fun cancelOrder(id: Long) = OrderRepository.cancel(id)
-    fun cancelAll()           = OrderRepository.cancelAll(symbol)
+    fun cancelAll() = OrderRepository.cancelAll(symbol)
 
     /* ---------- 生成假盘口 ---------- */
     private fun makeBook(mid: Float): List<OrderBookEntry> = List(10) { i ->
         val spread = 2f + i
         OrderBookEntry(
             amount = Random.nextFloat(),
-            bid    = mid - spread,
-            ask    = mid + spread
+            bid = mid - spread,
+            ask = mid + spread
         )
     }
 }

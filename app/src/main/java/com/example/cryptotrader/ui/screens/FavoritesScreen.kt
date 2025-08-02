@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -40,17 +39,17 @@ import com.example.cryptotrader.data.defaultFakeTickers
 @Composable
 @Preview
 fun FavoritesScreen() {
-    val allPairs      = remember { defaultFakeTickers().take(6).map { it.symbol } }
+    val allPairs = remember { defaultFakeTickers().take(6).map { it.symbol } }
     val selectedPairs = remember { mutableStateListOf<String>() }
 
     Scaffold(
         bottomBar = {
             Button(
-                onClick  = { },
-                enabled  = selectedPairs.isNotEmpty(),
-                colors   = ButtonDefaults.buttonColors(
+                onClick = { },
+                enabled = selectedPairs.isNotEmpty(),
+                colors = ButtonDefaults.buttonColors(
                     containerColor = Color.Black,
-                    contentColor   = Color.White,
+                    contentColor = Color.White,
                     disabledContainerColor = Color.LightGray
                 ),
                 modifier = Modifier
@@ -61,28 +60,30 @@ fun FavoritesScreen() {
             ) { Text("加入自选") }
         }
     ) { pad ->
-        Column(Modifier.fillMaxSize().padding(pad)) {
+        Column(Modifier
+            .fillMaxSize()
+            .padding(pad)) {
             LazyVerticalGrid(
-                columns           = GridCells.Fixed(2),
-                modifier          = Modifier
+                columns = GridCells.Fixed(2),
+                modifier = Modifier
                     .weight(1f)            // 关键：给底栏留空间
                     .fillMaxWidth()
                     .padding(16.dp),
-                contentPadding    = PaddingValues(bottom = 88.dp),
-                verticalArrangement   = Arrangement.spacedBy(12.dp),
+                contentPadding = PaddingValues(bottom = 88.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 items(allPairs) { pair ->
                     val checked = pair in selectedPairs
                     Surface(
-                        shape  = RoundedCornerShape(12.dp),
+                        shape = RoundedCornerShape(12.dp),
                         tonalElevation = 1.dp,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(72.dp)
                             .clickable {
                                 if (checked) selectedPairs.remove(pair)
-                                else          selectedPairs.add(pair)
+                                else selectedPairs.add(pair)
                             }
                     ) {
                         Row(
@@ -94,8 +95,8 @@ fun FavoritesScreen() {
                         ) {
                             Text(pair, style = MaterialTheme.typography.bodyLarge)
                             Surface(
-                                shape  = RoundedCornerShape(4.dp),
-                                color  = if (checked) MaterialTheme.colorScheme.onBackground else Color.Transparent,
+                                shape = RoundedCornerShape(4.dp),
+                                color = if (checked) MaterialTheme.colorScheme.onBackground else Color.Transparent,
                                 border = if (checked) null
                                 else BorderStroke(1.dp, MaterialTheme.colorScheme.onBackground),
                                 modifier = Modifier.size(22.dp)

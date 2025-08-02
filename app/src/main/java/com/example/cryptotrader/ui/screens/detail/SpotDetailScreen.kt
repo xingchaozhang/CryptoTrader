@@ -176,9 +176,11 @@ fun SpotDetailScreen(symbol: String, navController: NavController) {
             else List(20) { orderBook[it % orderBook.size] }
         }
 
-        LazyColumn(Modifier
-            .fillMaxSize()
-            .padding(pad)) {
+        LazyColumn(
+            Modifier
+                .fillMaxSize()
+                .padding(pad)
+        ) {
 
             item {
                 if (candleList.isNotEmpty())
@@ -219,7 +221,7 @@ fun SpotDetailScreen(symbol: String, navController: NavController) {
                                 setPinchZoom(true)
                                 isHighlightPerTapEnabled = true
                                 isHighlightPerDragEnabled = true
-                                setAutoScaleMinMaxEnabled(true)          
+                                setAutoScaleMinMaxEnabled(true)
 
                                 setOnChartGestureListener(object : OnChartGestureListener {
                                     override fun onChartGestureStart(
@@ -277,7 +279,7 @@ fun SpotDetailScreen(symbol: String, navController: NavController) {
                                 chart.notifyDataSetChanged()
                             }
 
-                            
+
                             val maxHigh = candleList.maxOf { it.high }
                             val minLow = candleList.minOf { it.low }
                             val padding = (maxHigh - minLow) * 0.05f
@@ -290,9 +292,11 @@ fun SpotDetailScreen(symbol: String, navController: NavController) {
                         }
                     )
                 } else {
-                    Box(Modifier
-                        .fillMaxWidth()
-                        .height(120.dp), Alignment.Center) {
+                    Box(
+                        Modifier
+                            .fillMaxWidth()
+                            .height(120.dp), Alignment.Center
+                    ) {
                         Text("页面正在建设中", fontSize = 12.sp)
                     }
                 }
@@ -367,17 +371,17 @@ private fun genInitialCandles(
     p: CandlePeriod,
     size: Int = 60
 ): List<Candle> {
-    val now     = System.currentTimeMillis()
-    val step    = p.minutes * 60_000L
+    val now = System.currentTimeMillis()
+    val step = p.minutes * 60_000L
     val aligned = now / step * step
-    var prev    = seed
+    var prev = seed
 
-    val amp = seed * 0.02f                     
+    val amp = seed * 0.02f
 
     return List(size) { i ->
-        val t  = aligned - (size - 1 - i) * step
+        val t = aligned - (size - 1 - i) * step
         val op = prev
-        val cl = op + random.nextFloat() * amp * 2 - amp      
+        val cl = op + random.nextFloat() * amp * 2 - amp
         val hi = max(op, cl) + random.nextFloat() * amp
         val lo = min(op, cl) - random.nextFloat() * amp
         prev = cl
@@ -396,21 +400,21 @@ private fun List<Candle>.updateByTick(
     val last = last()
 
     return if (now < last.time.toLong() + step) {
-        
+
         dropLast(1) + last.copy(
-            high  = max(last.high, price),
-            low   = min(last.low , price),
+            high = max(last.high, price),
+            low = min(last.low, price),
             close = price
         )
     } else {
-        
+
         val aligned = now / step * step
-        val open    = last.close
+        val open = last.close
         val newCandle = Candle(
-            time  = aligned.toFloat(),
-            open  = open,
-            high  = max(open, price),        
-            low   = min(open, price),        
+            time = aligned.toFloat(),
+            open = open,
+            high = max(open, price),
+            low = min(open, price),
             close = price
         )
         (this + newCandle).takeLast(maxBars)
@@ -421,9 +425,11 @@ private fun List<Candle>.updateByTick(
 private fun PriceHeader(c: Candle) {
     val pct = (c.close - c.open) / c.open * 100f
     val color = if (pct >= 0) Color(0xFF009E73) else Color(0xFFD32F2F)
-    Column(Modifier
-        .fillMaxWidth()
-        .padding(12.dp)) {
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .padding(12.dp)
+    ) {
         Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween) {
             Column {
                 Text(c.close.fmt(), style = MaterialTheme.typography.headlineLarge)
@@ -484,10 +490,12 @@ private fun OrderBookRow(e: OrderBookEntry) {
 
 @Composable
 private fun TradesPlaceholder() =
-    Box(Modifier
-        .fillMaxWidth()
-        .height(160.dp)
-        .background(MaterialTheme.colorScheme.surfaceVariant), Alignment.Center) {
+    Box(
+        Modifier
+            .fillMaxWidth()
+            .height(160.dp)
+            .background(MaterialTheme.colorScheme.surfaceVariant), Alignment.Center
+    ) {
         Text("成交列表占位", fontSize = 12.sp)
     }
 

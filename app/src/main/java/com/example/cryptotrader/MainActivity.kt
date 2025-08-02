@@ -1,9 +1,12 @@
 package com.example.cryptotrader
 
 import android.os.Bundle
+import android.util.Log
+import android.widget.TextView
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.Composable
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -20,6 +23,7 @@ import java.net.URLDecoder
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+    private val tester = PriceWsTester()
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -27,6 +31,16 @@ class MainActivity : ComponentActivity() {
                 AppNavigation()
             }
         }
+        lifecycleScope.launchWhenStarted {
+            tester.priceFlow.collect { price ->
+
+                Log.d("zxc", "onCreate: $price")            }
+        }
+    }
+
+    override fun onDestroy() {
+        tester.close()
+        super.onDestroy()
     }
 }
 
