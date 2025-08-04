@@ -19,7 +19,7 @@ class TradingApplication : Application() {
         super.onCreate()
         Log.d(TAG, "onCreate")
         FavoritesRepository.init(this)
-        TickerRepository.startMock()            // 启动行情流// 初始化 Room
+        TickerRepository.start()            // 启动行情流// 初始化 Room
         // Initialize secure storage and save demo credentials
         ApiKeyStorage.init(this)
         ApiKeyStorage.saveCredentials("demo_key", "demo_secret")

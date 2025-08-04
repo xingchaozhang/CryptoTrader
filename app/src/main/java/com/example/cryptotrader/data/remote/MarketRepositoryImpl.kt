@@ -7,16 +7,18 @@ import com.example.cryptotrader.data.local.OrderDao
 import com.example.cryptotrader.data.local.OrderEntity
 import com.example.cryptotrader.data.local.WatchlistDao
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import kotlin.random.Random
 
 /**
- * A simple implementation of [MarketRepository] that simulates price ticks and candle data.
+ * Implementation of [MarketRepository] that streams live prices from Binance
+ * while generating mock candle data.
  */
 class MarketRepositoryImpl @Inject constructor(
     private val watchlistDao: WatchlistDao,
@@ -25,15 +27,19 @@ class MarketRepositoryImpl @Inject constructor(
 
     private val TAG = "MarketRepo"
 
-    override fun subscribePriceStream(symbol: String): Flow<PriceUpdate> = flow {
+    override fun subscribePriceStream(symbol: String): Flow<PriceUpdate> = callbackFlow {
         Log.d(TAG, "subscribePriceStream: $symbol")
-        var last = 30000.0
-        val random = Random(System.currentTimeMillis())
-        while (true) {
-            delay(500L) // update every 500ms
-            val change = random.nextDouble(-20.0, 20.0)
-            last = (last + change).coerceAtLeast(1.0)
-            emit(PriceUpdate(symbol, last, last + 0.5, last - 0.5))
+        val streamer = BinancePriceStreamer(listOf(symbol))
+        streamer.start()
+        val job = launch {
+            streamer.tickerFlow.collect { (_, priceStr) ->
+                val price = priceStr.toDoubleOrNull() ?: return@collect
+                trySend(PriceUpdate(symbol, price, price, price))
+            }
+        }
+        awaitClose {
+            job.cancel()
+            streamer.stop()
         }
     }.flowOn(Dispatchers.IO)
 
