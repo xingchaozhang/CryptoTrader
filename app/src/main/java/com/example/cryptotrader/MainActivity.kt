@@ -30,7 +30,6 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onDestroy() {
-        tester.close()
         super.onDestroy()
     }
 }

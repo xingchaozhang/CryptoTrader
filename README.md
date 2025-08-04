@@ -132,5 +132,3 @@ domain层的作用是什么？
 应该统一用hilt来做接入。不要自己手动写。
 UI层应该专注于自己的事情，不要做任何数据有关的东西。
 TickerRepository 的scope没有cancel掉。
-
-
