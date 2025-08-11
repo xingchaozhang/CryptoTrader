@@ -128,7 +128,7 @@ res
     记录性能策略 文档化 FPS／内存指标及保持图表平滑的措施 
 ```
 SpotDetailScreen 内部数据计算的逻辑太多
-domain层的作用是什么？
+domain层的作用是什么？似乎有些多余
 应该统一用hilt来做接入。不要自己手动写。
 UI层应该专注于自己的事情，不要做任何数据有关的东西。
 TickerRepository 的scope没有cancel掉。

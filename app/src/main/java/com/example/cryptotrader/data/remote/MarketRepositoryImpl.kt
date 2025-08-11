@@ -1,6 +1,7 @@
 package com.example.cryptotrader.data.remote
 
 import android.util.Log
+import com.example.cryptotrader.BinancePriceStreamer
 import com.example.cryptotrader.data.Candle
 import com.example.cryptotrader.data.PriceUpdate
 import com.example.cryptotrader.data.local.OrderDao
@@ -29,19 +30,27 @@ class MarketRepositoryImpl @Inject constructor(
 
     override fun subscribePriceStream(symbol: String): Flow<PriceUpdate> = callbackFlow {
         Log.d(TAG, "subscribePriceStream: $symbol")
+
+        // ① 建立 Binance 行情流，只订阅当前 symbol
         val streamer = BinancePriceStreamer(listOf(symbol))
         streamer.start()
+
+        // ② 收集价格推送并发送给上游
         val job = launch {
             streamer.tickerFlow.collect { (_, priceStr) ->
                 val price = priceStr.toDoubleOrNull() ?: return@collect
                 trySend(PriceUpdate(symbol, price, price, price))
             }
         }
+
+        // ③ Flow 取消时关闭 WebSocket
         awaitClose {
             job.cancel()
             streamer.stop()
         }
     }.flowOn(Dispatchers.IO)
+
+    /* -------- 下面方法保持原逻辑（仅生成本地假 K 线 / 下单） -------- */
 
     override suspend fun getHistoricalCandles(symbol: String): List<Candle> {
         Log.d(TAG, "getHistoricalCandles: $symbol")
@@ -50,10 +59,10 @@ class MarketRepositoryImpl @Inject constructor(
         var lastClose = 30000.0
         val random = Random(now)
         val intervalMs = 60_000L // 1 minute
-        for (i in 0 until 60) {
+        repeat(60) { i ->
             val open = lastClose
             val high = open + random.nextDouble(0.0, 50.0)
-            val low = open - random.nextDouble(0.0, 50.0)
+            val low  = open - random.nextDouble(0.0, 50.0)
             val close = low + random.nextDouble(0.0, high - low)
             val time = now - (59 - i) * intervalMs
             candles += Candle(time, open, high, low, close)
@@ -63,9 +72,7 @@ class MarketRepositoryImpl @Inject constructor(
     }
 
     override suspend fun placeOrder(order: OrderEntity) {
-        Log.d(TAG, "placeOrder: ${'$'}order")
-        withContext(Dispatchers.IO) {
-            orderDao.insert(order)
-        }
+        Log.d(TAG, "placeOrder: $order")
+        withContext(Dispatchers.IO) { orderDao.insert(order) }
     }
 }

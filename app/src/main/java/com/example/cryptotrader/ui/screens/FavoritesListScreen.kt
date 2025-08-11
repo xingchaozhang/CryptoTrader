@@ -20,8 +20,10 @@ fun FavoritesListScreen(
 ) {
     val favSymbols by FavoritesRepository.symbols.collectAsState()
     val tickMap    by TickerRepository.tickers.collectAsState()
-    val list       = remember(favSymbols, tickMap) {
-        favSymbols.mapNotNull { tickMap[it] }
+
+    /* 根据自选列表派生可展示数据 */
+    val list by remember {
+        derivedStateOf { favSymbols.mapNotNull { tickMap[it] } }
     }
 
     if (favSymbols.isEmpty()) {
@@ -30,6 +32,7 @@ fun FavoritesListScreen(
     }
 
     Column(Modifier.fillMaxSize()) {
+        /* 表头 */
         Row(
             Modifier
                 .fillMaxWidth()
@@ -37,8 +40,10 @@ fun FavoritesListScreen(
             Arrangement.SpaceBetween
         ) {
             listOf("币种/成交额", "最新价", "涨跌幅").forEach {
-                Text(it, style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(0.7f))
+                Text(it,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(0.7f)
+                )
             }
             IconButton(onClick = onEditClick) {
                 Icon(Icons.Default.Edit, contentDescription = "编辑")
@@ -46,8 +51,12 @@ fun FavoritesListScreen(
         }
         Divider(color = MaterialTheme.colorScheme.onSurface.copy(0.1f))
 
+        /* 列表 */
         LazyColumn(contentPadding = PaddingValues(vertical = 8.dp)) {
-            items(list) { tk ->
+            items(
+                items = list,
+                key   = { it.symbol }        // 稳定 key，价格变动时正确重组
+            ) { tk ->
                 TickerRow(tk) {
                     navController.navigate("detail/${tk.symbol.replace("/", "")}")
                 }

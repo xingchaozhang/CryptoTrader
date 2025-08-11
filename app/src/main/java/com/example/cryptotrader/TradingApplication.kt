@@ -5,22 +5,18 @@ import android.util.Log
 import com.example.cryptotrader.data.FavoritesRepository
 import com.example.cryptotrader.data.TickerRepository
 import com.example.cryptotrader.data.local.ApiKeyStorage
-import dagger.hilt.android.HiltAndroidApp
+import dagger.hilt.android.HiltAndroidApp     // ← 新增
 
-/**
- * Custom application class required for Hilt initialization.
- */
 @HiltAndroidApp
 class TradingApplication : Application() {
-    companion object {
-        private const val TAG = "TradingApp"
-    }
+    private val TAG = "TradingApplication"
+
     override fun onCreate() {
         super.onCreate()
         Log.d(TAG, "onCreate")
         FavoritesRepository.init(this)
-        TickerRepository.start()            // 启动行情流// 初始化 Room
-        // Initialize secure storage and save demo credentials
+        TickerRepository.start()  // 启动实时行情流（由 startMock 改为 start）
+        // 初始化安全存储并保存演示用的 API 凭证
         ApiKeyStorage.init(this)
         ApiKeyStorage.saveCredentials("demo_key", "demo_secret")
     }
