@@ -1,10 +1,18 @@
 package com.example.cryptotrader
 
 import android.util.Log
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
-import okhttp3.*
+import kotlinx.coroutines.launch
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.Response
+import okhttp3.WebSocket
+import okhttp3.WebSocketListener
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -14,7 +22,7 @@ import org.json.JSONObject
 class BinancePriceStreamer(symbols: List<String>) : WebSocketListener() {
 
     private val client = OkHttpClient()
-    private val _flow  = MutableSharedFlow<Pair<String, String>>(extraBufferCapacity = 64)
+    private val _flow = MutableSharedFlow<Pair<String, String>>(extraBufferCapacity = 64)
     val tickerFlow: SharedFlow<Pair<String, String>> = _flow
 
     private val streams = symbols.map { "${it.lowercase()}@trade" }
@@ -22,10 +30,12 @@ class BinancePriceStreamer(symbols: List<String>) : WebSocketListener() {
     private var reconnectJob: Job? = null
 
     fun start() = connect()
-    fun stop()  { ws?.close(1000,null); client.dispatcher.executorService.shutdown() }
+    fun stop() {
+        ws?.close(1000, null); client.dispatcher.executorService.shutdown()
+    }
 
     private fun connect() {
-        Log.i(TAG, "🔄 connect()")
+        Log.i(TAG, " connect()")
         ws = client.newWebSocket(
             Request.Builder().url("wss://data-stream.binance.vision/ws").build(),
             this
@@ -33,7 +43,7 @@ class BinancePriceStreamer(symbols: List<String>) : WebSocketListener() {
     }
 
     override fun onOpen(ws: WebSocket, resp: Response) {
-        Log.i(TAG, "✅ onOpen → SUBSCRIBE $streams")
+        Log.i(TAG, " onOpen → SUBSCRIBE $streams")
         ws.send(JSONObject().apply {
             put("method", "SUBSCRIBE")
             put("params", JSONArray(streams))
@@ -43,19 +53,21 @@ class BinancePriceStreamer(symbols: List<String>) : WebSocketListener() {
 
     override fun onMessage(ws: WebSocket, text: String) {
         val root = JSONObject(text)
-        if (root.has("result") || root.has("code")) return                 // ACK / error
+        if (root.has("result") || root.has("code")) return
         val d = if (root.has("stream")) root.getJSONObject("data") else root
         if (d.has("s") && d.has("p")) {
-            val sym = d.getString("s"); val price = d.getString("p")
+            val sym = d.getString("s");
+            val price = d.getString("p")
             _flow.tryEmit(sym to price)
         }
     }
 
     override fun onFailure(ws: WebSocket, t: Throwable, r: Response?) {
-        Log.e(TAG, "❌ onFailure", t); reconnect()
+        Log.e(TAG, " onFailure", t); reconnect()
     }
+
     override fun onClosed(ws: WebSocket, code: Int, reason: String) {
-        Log.w(TAG, "⛔ onClosed code=$code reason=$reason"); reconnect()
+        Log.w(TAG, " onClosed code=$code reason=$reason"); reconnect()
     }
 
     private fun reconnect(delayMs: Long = 2000) {
@@ -65,5 +77,8 @@ class BinancePriceStreamer(symbols: List<String>) : WebSocketListener() {
             delay(delayMs); connect()
         }
     }
-    private companion object { const val TAG = "BinancePriceStreamer" }
+
+    private companion object {
+        const val TAG = "BinancePriceStreamer"
+    }
 }

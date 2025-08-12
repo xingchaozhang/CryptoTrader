@@ -1,57 +1,63 @@
 package com.example.cryptotrader.ui.screens.trade
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.cryptotrader.data.Order
 import com.example.cryptotrader.data.OrderRepository
+import com.example.cryptotrader.data.TickerRepository
 import com.example.cryptotrader.ui.detail.OrderBookEntry
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.Locale
 import kotlin.random.Random
 
-class TradeViewModel(private val symbol: String) : ViewModel() {
+@HiltViewModel
+class TradeViewModel @Inject constructor(
+    savedStateHandle: SavedStateHandle
+) : ViewModel() {
+
+    // 从路由参数里拿 {symbol}，并统一成 XXX/USDT 形式
+    private val symbol: String = normalizeSymbol(savedStateHandle["symbol"] ?: "")
 
     /* ---------- UI State ---------- */
-    private val _ui = MutableStateFlow(
-        TradeUiState(
-            symbol = symbol,
-            latestPrice = 0f,
-            priceField = "",
-            orderBook = emptyList()
-        )
-    )
-    val ui: StateFlow<TradeUiState> = _ui
+    private val _ui = MutableStateFlow(TradeUiState(symbol = symbol))
+    val ui: StateFlow<TradeUiState> = _ui.asStateFlow()
 
     /* ---------- 订单仓库监听 ---------- */
     init {
+        // 订单列表
         viewModelScope.launch {
             OrderRepository.orders.collect { list ->
                 _ui.update { it.copy(allOrders = list.filter { o -> o.symbol == symbol }) }
             }
         }
+        // 价格订阅 —— VM 内部自己更新 UI；UI 不再手动推送
+        viewModelScope.launch {
+            TickerRepository.observe(symbol)
+                .filterNotNull()
+                .collect { tk -> onTicker(tk.price.toFloat()) }
+        }
     }
 
-    /* ---------- 由外部(TradeScreen)推送最新价 ---------- */
-    fun updateLatestPrice(p: Float) {
+    private fun onTicker(p: Float) {
         val book = makeBook(p)
         val bestAsk = book.minByOrNull { it.ask }?.ask ?: p
         val bestBid = book.maxByOrNull { it.bid }?.bid ?: p
 
-        _ui.update {
-            var s = it.copy(latestPrice = p, orderBook = book)
-
-            // 市价单实时同步输入框
+        _ui.update { cur ->
+            var s = cur.copy(latestPrice = p, orderBook = book)
             if (s.orderType == OrderType.MARKET) s = s.copy(priceField = p.noComma())
-
-            // 若价格或余额变化，需要同步滑块/数量
-            s = syncSlider(s)
-            s
+            syncSlider(s)
         }
 
-        // 撮合限价
+        // 用最优价撮合模拟订单
         OrderRepository.matchWith(bestBid, bestAsk)
     }
 
@@ -77,7 +83,7 @@ class TradeViewModel(private val symbol: String) : ViewModel() {
         return it.copy(qtyField = qty.noComma(4))
     }
 
-    /* ---------- 下单 --------- */
+    /* ---------- 下单 ---------- */
     fun placeOrder() {
         val price = _ui.value.priceField.parseFloat() ?: return
         val qty = _ui.value.qtyField.parseFloat() ?: return
@@ -107,6 +113,14 @@ class TradeViewModel(private val symbol: String) : ViewModel() {
     }
 }
 
-/* ---------- 简易扩展 ---------- */
+/* ---------- 小工具 ---------- */
 private fun String.parseFloat() = replace(",", "").toFloatOrNull()
 private fun Float.noComma(dec: Int = 2) = "%.${dec}f".format(Locale.US, this)
+
+private fun normalizeSymbol(input: String): String {
+    val up = input.uppercase()
+    if (up.contains("/")) return up
+    val quotes = listOf("USDT", "BUSD", "FDUSD", "USDC")
+    val q = quotes.firstOrNull { up.endsWith(it) } ?: return up
+    return up.dropLast(q.length) + "/" + q
+}

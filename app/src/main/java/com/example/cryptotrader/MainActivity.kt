@@ -9,6 +9,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.example.cryptotrader.data.FavoritesRepository
+import com.example.cryptotrader.ui.screens.FavoritesEditScreen
 import com.example.cryptotrader.ui.screens.MainScreen
 import com.example.cryptotrader.ui.screens.OrderHistoryScreen
 import com.example.cryptotrader.ui.screens.OrderScreen
@@ -65,8 +67,19 @@ fun AppNavigation() {
                 navArgument("symbol") { type = NavType.StringType }
             )
         ) { backStack ->
-            val sym = backStack.arguments!!.getString("symbol")!!
-            TradeScreen(symbol = sym, navController = navController)
+            TradeScreen(navController = navController)
+        }
+
+        composable("favorites_edit") {
+            FavoritesEditScreen(
+                onSave = { newSet ->
+                    FavoritesRepository.replaceAll(newSet)
+                    navController.popBackStack()
+                },
+                onCancel = {
+                    navController.popBackStack()
+                }
+            )
         }
     }
 }

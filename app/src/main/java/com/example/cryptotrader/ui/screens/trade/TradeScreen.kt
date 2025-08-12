@@ -1,9 +1,27 @@
 package com.example.cryptotrader.ui.screens.trade
 
-import androidx.compose.animation.*
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -11,8 +29,31 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.Divider
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Slider
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -21,14 +62,11 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.cryptotrader.data.Order
 import com.example.cryptotrader.data.Order.Side
 import com.example.cryptotrader.data.Order.Status
-import com.example.cryptotrader.data.TickerRepository
 import com.example.cryptotrader.ui.detail.OrderBookEntry
 import com.example.cryptotrader.ui.screens.trade.OrderType.LIMIT
 import com.example.cryptotrader.ui.screens.trade.OrderType.MARKET
@@ -37,59 +75,29 @@ import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalAnimationApi::class)
 @Composable
-fun TradeScreen(
-    symbol: String,
-    navController: NavController
-) {
-    val repoSymbol = remember(symbol) {
-        val upper = symbol.uppercase()
-        if (upper.contains("/")) upper
-        else {
-            
-            val quotes = listOf("USDT", "BUSD", "FDUSD", "USDC")
-            val quote = quotes.firstOrNull { upper.endsWith(it) }
-            if (quote != null) {
-                upper.dropLast(quote.length) + "/" + quote
-            } else upper          
-        }
-    }
-
-    val vm: TradeViewModel = viewModel(
-        key = repoSymbol,
-        factory = object : ViewModelProvider.Factory {
-            @Suppress("UNCHECKED_CAST")
-            override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                TradeViewModel(repoSymbol) as T
-        }
-    )
-
-    val ticker by TickerRepository.observe(repoSymbol).collectAsState(initial = null)
-    LaunchedEffect(ticker?.price) {
-        ticker?.price?.toFloat()?.let { vm.updateLatestPrice(it) }
-    }
-
+fun TradeScreen(navController: NavController, vm: TradeViewModel = hiltViewModel()) {
     val ui by vm.ui.collectAsState()
 
-    var showConfirm     by remember { mutableStateOf(false) }
-    var bottomTab       by remember { mutableStateOf(0) }
+    var showConfirm by remember { mutableStateOf(false) }
+    var bottomTab by remember { mutableStateOf(0) }
     var showOnlyCurrent by remember { mutableStateOf(true) }
-    var stopEnabled     by remember { mutableStateOf(false) }
-    var takeProfitTxt   by remember { mutableStateOf("") }
-    var stopLossTxt     by remember { mutableStateOf("") }
+    var stopEnabled by remember { mutableStateOf(false) }
+    var takeProfitTxt by remember { mutableStateOf("") }
+    var stopLossTxt by remember { mutableStateOf("") }
 
-    val buyColor  = Color(0xFF00B4B4)
+    val buyColor = Color(0xFF00B4B4)
     val sellColor = Color(0xFFD32F2F)
     val mainColor = if (ui.isBuy) buyColor else sellColor
 
-    val priceF   = ui.priceField.parseFloat() ?: 0f
-    val qtyF     = ui.qtyField.parseFloat()   ?: 0f
+    val priceF = ui.priceField.parseFloat() ?: 0f
+    val qtyF = ui.qtyField.parseFloat() ?: 0f
     val amountTxt =
         if (priceF == 0f || qtyF == 0f) "" else "%.2f".format(Locale.US, priceF * qtyF)
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(repoSymbol, fontWeight = FontWeight.Bold) },
+                title = { Text(ui.symbol.ifEmpty { "交易" }, fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.Default.ArrowBack, null)
@@ -104,9 +112,9 @@ fun TradeScreen(
                     .navigationBarsPadding()
             ) {
                 Button(
-                    onClick  = { showConfirm = true },
-                    enabled  = priceF > 0f && qtyF > 0f,
-                    colors   = ButtonDefaults.buttonColors(containerColor = mainColor),
+                    onClick = { showConfirm = true },
+                    enabled = priceF > 0f && qtyF > 0f,
+                    colors = ButtonDefaults.buttonColors(containerColor = mainColor),
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(56.dp)
@@ -134,7 +142,7 @@ fun TradeScreen(
                         .wrapContentHeight()
                 ) {
                     Row(Modifier.fillMaxWidth()) {
-                        SegTab("买入", ui.isBuy)  { vm.switchSide(true)  }
+                        SegTab("买入", ui.isBuy) { vm.switchSide(true) }
                         SegTab("卖出", !ui.isBuy) { vm.switchSide(false) }
                     }
                     Spacer(Modifier.height(8.dp))
@@ -220,7 +228,7 @@ fun TradeScreen(
                     AnimatedVisibility(
                         stopEnabled,
                         enter = expandVertically(tween(250)) + fadeIn(),
-                        exit  = shrinkVertically(tween(250)) + fadeOut()
+                        exit = shrinkVertically(tween(250)) + fadeOut()
                     ) {
                         Column {
                             OutlinedTextField(
@@ -273,7 +281,7 @@ fun TradeScreen(
                         TextButton(onClick = vm::cancelAll) { Text("全部撤销") }
                     }
                     val list = ui.allOrders.filter {
-                        it.status == Status.OPEN && (!showOnlyCurrent || it.symbol == repoSymbol)
+                        it.status == Status.OPEN && (!showOnlyCurrent || it.symbol == ui.symbol)
                     }
                     OrdersList(list, vm::cancelOrder)
                 }
@@ -312,7 +320,9 @@ fun TradeScreen(
 @Composable
 private fun DepthPanel(book: List<OrderBookEntry>, last: Float, modifier: Modifier = Modifier) {
     Column(
-        modifier.width(150.dp).padding(end = 8.dp)
+        modifier
+            .width(150.dp)
+            .padding(end = 8.dp)
     ) {
         Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween) {
             Text("价格", style = MaterialTheme.typography.labelSmall)
@@ -325,8 +335,10 @@ private fun DepthPanel(book: List<OrderBookEntry>, last: Float, modifier: Modifi
             Text(last.noComma(), fontSize = 20.sp, fontWeight = FontWeight.Bold)
             Text("")
         }
-        Text("≈ ¥${(last * 7.18f).roundToInt()}",
-            fontSize = 12.sp, modifier = Modifier.align(Alignment.End))
+        Text(
+            "≈ ¥${(last * 7.18f).roundToInt()}",
+            fontSize = 12.sp, modifier = Modifier.align(Alignment.End)
+        )
 
         val buys = book.takeLast(5).sortedBy { it.bid }
         buys.forEach { DepthRow(it.bid, it.amount, isBuy = true) }
@@ -355,7 +367,9 @@ private fun RowScope.SegTab(text: String, selected: Boolean, onClick: () -> Unit
     val fg = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
     TextButton(
         onClick,
-        Modifier.weight(1f).background(bg, MaterialTheme.shapes.small),
+        Modifier
+            .weight(1f)
+            .background(bg, MaterialTheme.shapes.small),
         contentPadding = PaddingValues(0.dp)
     ) { Text(text, color = fg, fontSize = 12.sp) }
 }
@@ -386,7 +400,9 @@ private fun HistoryList(list: List<Order>) {
 @Composable
 private fun OrderRow(o: Order, onCancel: (Long) -> Unit) {
     Row(
-        Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 2.dp),
+        Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp, vertical = 2.dp),
         Arrangement.SpaceBetween, Alignment.CenterVertically
     ) {
         Text("${if (o.side == Side.BUY) "买" else "卖"} ${o.qty.noComma(4)}", fontSize = 12.sp)
@@ -398,7 +414,9 @@ private fun OrderRow(o: Order, onCancel: (Long) -> Unit) {
 @Composable
 private fun HistoryRow(o: Order) {
     Row(
-        Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 2.dp),
+        Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp, vertical = 2.dp),
         Arrangement.SpaceBetween
     ) {
         Text("${if (o.side == Side.BUY) "买" else "卖"} ${o.qty.noComma(4)}", fontSize = 12.sp)
@@ -409,10 +427,17 @@ private fun HistoryRow(o: Order) {
 
 @Composable
 private fun PlaceholderSection(text: String = "页面建设中") =
-    Box(Modifier.fillMaxWidth().height(80.dp), Alignment.Center) { Text(text) }
+    Box(
+        Modifier
+            .fillMaxWidth()
+            .height(80.dp),
+        Alignment.Center
+    ) { Text(text) }
 
+/* ---------- 小工具 ---------- */
 private fun String.parseFloat() = replace(",", "").toFloatOrNull()
 private fun Float.noComma(dec: Int = 2) = "%.${dec}f".format(Locale.US, this)
 
-@Composable private fun InfoRow(k: String, v: String) =
+@Composable
+private fun InfoRow(k: String, v: String) =
     Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween) { Text(k); Text(v) }

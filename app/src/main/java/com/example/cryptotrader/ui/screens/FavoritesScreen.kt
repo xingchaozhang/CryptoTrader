@@ -1,6 +1,5 @@
 package com.example.cryptotrader.ui.screens
 
-
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -60,9 +59,11 @@ fun FavoritesScreen() {
             ) { Text("加入自选") }
         }
     ) { pad ->
-        Column(Modifier
-            .fillMaxSize()
-            .padding(pad)) {
+        Column(
+            Modifier
+                .fillMaxSize()
+                .padding(pad)
+        ) {
             LazyVerticalGrid(
                 columns = GridCells.Fixed(2),
                 modifier = Modifier

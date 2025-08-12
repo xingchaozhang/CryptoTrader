@@ -17,10 +17,6 @@ import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import kotlin.random.Random
 
-/**
- * Implementation of [MarketRepository] that streams live prices from Binance
- * while generating mock candle data.
- */
 class MarketRepositoryImpl @Inject constructor(
     private val watchlistDao: WatchlistDao,
     private val orderDao: OrderDao
@@ -62,7 +58,7 @@ class MarketRepositoryImpl @Inject constructor(
         repeat(60) { i ->
             val open = lastClose
             val high = open + random.nextDouble(0.0, 50.0)
-            val low  = open - random.nextDouble(0.0, 50.0)
+            val low = open - random.nextDouble(0.0, 50.0)
             val close = low + random.nextDouble(0.0, high - low)
             val time = now - (59 - i) * intervalMs
             candles += Candle(time, open, high, low, close)

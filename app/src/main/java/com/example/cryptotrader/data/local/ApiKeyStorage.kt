@@ -5,10 +5,6 @@ import android.content.SharedPreferences
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 
-/**
- * Simple helper for storing API credentials securely using
- * [EncryptedSharedPreferences] backed by the Android Keystore.
- */
 object ApiKeyStorage {
 
     private const val PREFS_FILE = "secure_api_prefs"
